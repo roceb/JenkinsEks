@@ -1,5 +1,4 @@
 terraform {
-  required_version = "~> 1.3"
   # Here we can add a backend to store the state to make it easy to update with jenkins and other developers
 
   #   backend "s3" {
