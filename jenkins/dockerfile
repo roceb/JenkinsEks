@@ -1,0 +1,17 @@
+FROM jenkins/jenkins:lts-jdk17
+# using lts jenkins
+# adding docker to docker
+RUN apt update && curl -fsSL https://get.docker.com | sh
+# adding plugins to jenkins
+COPY --chown=jenkins:jenkins plugins.txt /usr/share/jenkins/ref/plugins.txt
+# installing plugins to jenkins
+RUN jenkins-plugin-cli -f /usr/share/jenkins/ref/plugins.txt
+# adding initial config using jenkins config as code plugin
+ENV CASC_JENKINS_CONFIG=/var/jenkins_conf/casc.yaml
+COPY casc.yaml /var/jenkins_conf/casc.yaml
+# adding a seedjob to start at first run using jobdsl plugin
+COPY seedjob.groovy /usr/local/seedjob.groovy
+ENV JAVA_OPTS -Djenkins.install.runSetupWizard=false
+RUN usermod -aG docker jenkins
+USER jenkins
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/jenkins.sh"]
