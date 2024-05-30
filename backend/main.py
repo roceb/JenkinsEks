@@ -1,5 +1,4 @@
 import os
-import json
 import requests
 from fastapi import FastAPI, status, Response
 from pydantic import BaseModel
@@ -8,9 +7,8 @@ app = FastAPI()
 
 # Setup the Open-Meteo API client with cache and retry on error
 APIKEY = os.environ["WEATHERAPI"]
-print(f"This is the key: {APIKEY}")
 if APIKEY == "":
-    raise ValueError
+    raise Exception("Missing API Key")
 
 
 @app.get("/health")
@@ -34,32 +32,9 @@ class WeatherDict:
             "daily_chance_of_snow"
         ]
 
-    # def __iter__(self):
-    #     yield "Location", self.Location
-    #     yield "State/Region", self.Region
-    #     yield "Country", self.Country
-    #     yield "Temp", self.Temp
-    #     yield "Condition", self.Condition
-    #     yield "MinTemp", self.MinTemp
-    #     yield "MaxTemp", self.MaxTemp
-    #     yield "ChanceOfRain", self.ChanceOfRain
-    #     yield "ChanceOfSnow", self.ChanceofSnow
-
-    # def toJson(self):
-    #     return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-
 
 @app.get("/api/zipcode/{location}", status_code=200)
 def getWeather(location: str, response: Response):
-    class Weather(BaseModel):
-        Location: str
-        Temp: int | None = None
-        Condition: str | None = None
-        MinTemp: float
-        MaxTemp: float | None = None
-        ChanceOfRain: float | None = None
-        ChanceofSnow: float | None = None
-
     if len(location) != 5:
         response.status_code = status.HTTP_400_BAD_REQUEST
         return {"status": "fail", "msg": "invalid zipcode"}
