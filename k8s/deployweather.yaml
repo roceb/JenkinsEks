@@ -1,0 +1,29 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weatherapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weatherapp
+  template:
+    metadata:
+      labels:
+        app: weatherapp
+    spec:
+      containers:
+        - name: weatherapp
+          # image: Added custom image address
+          env: 
+            - name: WEATHERAPI
+              valueFrom:
+                secretKeyRef:
+                  name: weatherapi
+                  key: WEATHERAPI
+          ports:
+            - name: web
+              containerPort: 80
+      imagePullSecrets:
+        - name: regcred

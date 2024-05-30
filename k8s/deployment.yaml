@@ -1,0 +1,169 @@
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: nginx
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: nginx
+#   template:
+#     metadata:
+#       labels:
+#         app: nginx
+#     spec:
+#       containers:
+#         - name: nginx
+#           image: nginx:1.14.2
+#           ports:
+#             - name: web
+#               containerPort: 80
+#           resources:
+#             requests:
+#               memory: 256Mi
+#               cpu: 250m
+#             limits:
+#               memory: 256Mi
+#               cpu: 250m
+#       affinity:
+#         nodeAffinity:
+#           requiredDuringSchedulingIgnoredDuringExecution:
+#             nodeSelectorTerms:
+#               - matchExpressions:
+#                   - key: role
+#                     operator: In
+#                     values:
+#                       - private
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: jenkins-server
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       app: jenkins-server
+#   template:
+#     metadata:
+#       labels:
+#         app: jenkins-server
+#     spec:
+#       securityContext:
+#             fsGroup: 1000
+#             runAsUser: 1000
+#       serviceAccountName: jenkins-admin
+#       containers:
+#         - name: jenkins
+#           image: jenkins/jenkins
+#           resources:
+#             limits:
+#               memory: "256Mi"
+#               cpu: "500m"
+#             requests:
+#               memory: "256Mi"
+#               cpu: "100m"
+#           ports:
+#             - name: httpport
+#               containerPort: 8080
+#             - name: jnlpport
+#               containerPort: 50000
+#           livenessProbe:
+#             httpGet:
+#               path: "/login"
+#               port: 8080
+#             initialDelaySeconds: 90
+#             periodSeconds: 10
+#             timeoutSeconds: 5
+#             failureThreshold: 5
+#           readinessProbe:
+#             httpGet:
+#               path: "/login"
+#               port: 8080
+#             initialDelaySeconds: 60
+#             periodSeconds: 10
+#             timeoutSeconds: 5
+#             failureThreshold: 3
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+    # Allows the creation of pods
+      serviceAccountName: jenkins-admin
+      securityContext:
+            runAsUser: 1000
+            runAsGroup: 3000
+            fsGroup: 2000
+      containers:
+        - name: jenkins
+          # FIXME: missing image
+          # image: add custom image here
+          securityContext:
+            allowPrivilegeEscalation: false
+          env:
+            - name: JENKINS_ADMIN_ID
+              value: admin
+            - name: JENKINS_ADMIN_PASSWORD
+            # TODO: add password and user to kube secret
+              value: WaterDevFireCoinLaptop
+          ports:
+            # - name: web
+            #   containerPort: 80
+            - name: httpport
+              containerPort: 8080
+            - name: jnlpport
+              containerPort: 50000
+          resources:
+            requests:
+              memory: 500Mi
+              cpu: 500m
+            limits:
+              memory: 2Gi
+              cpu: 1000m
+          livenessProbe:
+            httpGet:
+              path: "/login"
+              port: 8080
+            initialDelaySeconds: 90
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 5
+          readinessProbe:
+            httpGet:
+              path: "/login"
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+# Add Persistent volume here. Disabling for test
+#           volumeMounts:
+#             - name: jenkins-data
+#               mountPath: /var/jenkins_home
+#       volumes:
+#         - name: jenkins-data
+#           emptyDir:
+#             sizeLimit: 500Mi
+
+      # This allows us to use affinity to only limit the deployment to a specific node, like private or public
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: role
+      #               operator: In
+      #               values:
+      #                 - public
